@@ -1,0 +1,20 @@
+EVENT INFOS:
+
+url
+name
+address
+start_date
+end_date
+img_url
+tags
+description
+performers
+products   -->  (product_name, product_price, price_currency, product_description, buy_url)
+	
+	
+	
+AFAZERES:
+
+norm datas, norm tags shotgun, norm performers shotgun
+criar scrapping do ingresse.com
+	
