@@ -34,7 +34,7 @@ def remove_expired_events(filename='events.csv'):
                 try:
                     # Converter a data de término (ISO 8601) para datetime usando dateutil.parser
                     event_end_datetime = isoparse(event_end_date)
-                    print(event.get("name", None), '|', event_end_date, '|', datetime.now(event_end_datetime.tzinfo), '|', event_end_datetime >= datetime.now(event_end_datetime.tzinfo))
+                    #print(event.get("name", None), '|', event_end_date, '|', datetime.now(event_end_datetime.tzinfo), '|', event_end_datetime >= datetime.now(event_end_datetime.tzinfo))
                     if event_end_datetime >= datetime.now(event_end_datetime.tzinfo):  # Usa o fuso horário da data
                         valid_events.append(event)
                 except ValueError:
@@ -94,6 +94,7 @@ def export_to_csv(data_list, filename='events.csv'):
             
             
 # Rotina para o banco de próximos eventos
-export_to_csv(all_pixta_events)
-export_to_csv(all_shotgun_events)
-remove_expired_events()
+if __name__ == "__main__":
+    export_to_csv(all_pixta_events)
+    export_to_csv(all_shotgun_events)
+    remove_expired_events()
