@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 from dateutil.parser import isoparse
 
 
-# Function to get most event informations
 def extract_informations(scripts):
+    "Function to get most event informations"
     event_dict = {}
     for script in scripts:
         try:
@@ -13,7 +13,7 @@ def extract_informations(scripts):
             if all(key in data for key in ["name", "offers", "description", "performer"]):
                 # get general info
                 event_dict["name"] = data.get("name", None)
-                print(data.get("startDate", None), '|', isoparse(data.get("startDate", None)))
+                #print(data.get("startDate", None), '|', isoparse(data.get("startDate", None)))
                 event_dict["start"] = isoparse(data.get("startDate", None))
                 event_dict["end"] = isoparse(data.get("endDate", None))
                 event_dict["img_url"] = data.get("image", None)
@@ -46,31 +46,43 @@ def extract_informations(scripts):
     return event_dict
 
 
-# Get all event pages
-event_urls = []
-answer = requests.get("https://shotgun.live/en/events")
-content = BeautifulSoup(answer.text, "html.parser")
-if answer.status_code != 200: 
-    print("Fail in load the initial event page.")
-for link in content.find_all("a"):
-    if "/en/events/" in str(link.get("href")):
-        event_urls.append(link.get("href"))
-
-for i in range(2,100):
-    answer = requests.get(f"https://shotgun.live/en/events/-/{i}")
+def get_event_urls(city_url):
+    event_urls = []
+    answer = requests.get(city_url)
     content = BeautifulSoup(answer.text, "html.parser")
     if answer.status_code != 200: 
-        break
+        print("Fail in load the initial event page.")
     for link in content.find_all("a"):
         if "/en/events/" in str(link.get("href")):
-            event_urls.append(link.get("href"))
+            event_urls.append("https://shotgun.live/" + link.get("href"))
+    return list(set(event_urls))
 
 
-# Get all events infos
+# Get all available cities
+answer = requests.get("https://shotgun.live/en/cities")
+content = BeautifulSoup(answer.content, "html.parser")
+links = content.find_all("a", href=True)
+cities_list = [
+    link["href"].split("/")[-1]  # Extrai apenas o "caxias-do-sul" do link
+    for link in links
+    if "/en/cities/" in link["href"]  # Garante que é um link de cidade
+]
+
+
+# Get all event urls
+all_event_urls = []
+for city in cities_list:
+    city_url = f"https://shotgun.live/en/cities/{city}"
+    event_urls = get_event_urls(city_url)
+    for event in event_urls:  
+        all_event_urls.append(event)
+    
+    
+# Get all event infos
 all_shotgun_events = []
-for url in event_urls:
+for url in all_event_urls:
     # Page connection
-    answer = requests.get("https://shotgun.live" + url)
+    answer = requests.get(url)
     content = BeautifulSoup(answer.text, "html.parser")
     
     # Get event info
