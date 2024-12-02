@@ -2,6 +2,11 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from dateutil.parser import isoparse
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
 
 
 def extract_informations(scripts):
@@ -47,25 +52,56 @@ def extract_informations(scripts):
 
 
 def get_event_urls(city_url):
+    # Config WebDriver
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')  # Run without graphical interface
+    options.add_argument('--disable-gpu')  # Optimization for systems without GPU support
+    options.add_argument('--no-sandbox')  # For Linux environments
+
+    # Start WebDriver
+    driver = webdriver.Chrome(options=options)
+    driver.get(city_url)
+
+    # Click the "View More" button repeatedly until all content loads
+    while True:
+        try:
+            # Wait until the button is visible and clickable
+            wait = WebDriverWait(driver, 10)
+            view_more_button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "View more")]'))
+            )
+            # Click button
+            view_more_button.click()
+            time.sleep(2)
+        except Exception:
+            #print("Todos os dados foram carregados ou o botão não está mais disponível.")
+            break
+
+    # Get final HTML
+    html_content = driver.page_source
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    # Close WebDriver
+    driver.quit()
+
+    # Get all event urls from current city
     event_urls = []
-    answer = requests.get(city_url)
-    content = BeautifulSoup(answer.text, "html.parser")
-    if answer.status_code != 200: 
-        print("Fail in load the initial event page.")
-    for link in content.find_all("a"):
+    for link in soup.find_all("a"):
         if "/en/events/" in str(link.get("href")):
             event_urls.append("https://shotgun.live/" + link.get("href"))
-    return list(set(event_urls))
 
+    return list(set(event_urls))
+    
 
 # Get all available cities
 answer = requests.get("https://shotgun.live/en/cities")
 content = BeautifulSoup(answer.content, "html.parser")
-links = content.find_all("a", href=True)
+target_div = content.find("div", {"id": "br", "class": "relative space-y-8"})
+links = target_div.find_all("a", href=True)  # Search for links within the div
 cities_list = [
-    link["href"].split("/")[-1]  # Extrai apenas o "caxias-do-sul" do link
+    link["href"].split("/")[-1]  # Extracts only "caxias-do-sul" from the link
     for link in links
-    if "/en/cities/" in link["href"]  # Garante que é um link de cidade
+    if "/en/cities/" in link["href"]  # Ensure it is a city link
 ]
 
 

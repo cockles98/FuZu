@@ -1,10 +1,10 @@
 import csv
 from datetime import datetime
-from dateutil.parser import isoparse  # Importa o parser para datas ISO 8601
+from dateutil.parser import isoparse
 from shotgun_web_scraping import *
 from pixta_web_scraping import *
 
-# Função para ler os eventos existentes no arquivo CSV
+# Function to read existing events in the CSV file
 def read_existing_events(filename='events.csv'):
     existing_events = set()
     try:
@@ -13,72 +13,72 @@ def read_existing_events(filename='events.csv'):
             for row in reader:
                 existing_events.add(row['name'])
     except FileNotFoundError:
-        # Se o arquivo não existir, retornamos um set vazio
+        # If the file does not exist, we return an empty set
         pass
     return existing_events
     
 
-# Função para remover eventos expirados do CSV
+# Function to remove expired events from CSV
 def remove_expired_events(filename='events.csv'):
     try:
-        # Ler todos os eventos do CSV
+        # Read all CSV events
         with open(filename, mode='r', newline='', encoding='utf-8') as file:
             reader = csv.DictReader(file)
-            events = list(reader)  # Convertemos em uma lista para manipulação
+            events = list(reader)  # Convert it into a list for manipulation
             
-        # Filtrar apenas os eventos válidos (não expirados)
+        # Filter only valid (non-expired) events
         valid_events = []
         for event in events:
             event_end_date = event.get('end', '')
             if event_end_date:
                 try:
-                    # Converter a data de término (ISO 8601) para datetime usando dateutil.parser
+                    # Convert end date (ISO 8601) to datetime using dateutil.parser
                     event_end_datetime = isoparse(event_end_date)
                     #print(event.get("name", None), '|', event_end_date, '|', datetime.now(event_end_datetime.tzinfo), '|', event_end_datetime >= datetime.now(event_end_datetime.tzinfo))
-                    if event_end_datetime >= datetime.now(event_end_datetime.tzinfo):  # Usa o fuso horário da data
+                    if event_end_datetime >= datetime.now(event_end_datetime.tzinfo):  # Use date time zone
                         valid_events.append(event)
                 except ValueError:
-                    # Se a data for inválida, manter o evento no arquivo
+                    # If the date is invalid, keep the event in the file
                     valid_events.append(event)
         
-        # Regravar apenas os eventos válidos no CSV
+        # Rewrite only valid events in CSV
         with open(filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=reader.fieldnames)
             writer.writeheader()
             writer.writerows(valid_events)
     except FileNotFoundError:
-        # Se o arquivo não existir, nada precisa ser feito
+        # If the file does not exist, nothing needs to be done
         pass
 
 
-# Função para exportar os dados para um arquivo CSV (sem duplicação)
+# Function to export data to a CSV file (without duplication)
 def export_to_csv(data_list, filename='events.csv'):
-    # Definir os cabeçalhos do CSV
+    # Set CSV headers
     headers = [
         'event_url', 'name', 'start', 'end', 'address', 'description', 'tags', 'performers', 'products', 'img_url'
     ]
     
-    # Obter eventos já existentes no CSV para evitar duplicação
+    # Get existing events in CSV to avoid duplication
     existing_events = read_existing_events(filename)
     
     with open(filename, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=headers)
         
-        # Escrever cabeçalhos apenas se o arquivo estiver vazio
+        # Write headers only if file is empty
         if file.tell() == 0:
             writer.writeheader()
         
-        # Iterar sobre cada dicionário na lista
+        # Iterate over each dictionary in the list
         for data in data_list:
-            # Verificar se o evento já existe no arquivo CSV
+            # Check if the event already exists in the CSV file
             event_name = data.get('name', '')
             if event_name in existing_events:
-                continue  # Ignorar duplicações
+                continue  # Ignore duplications
             
-            # Marcar o evento como adicionado
+            # Mark the event as added
             existing_events.add(event_name)
             
-            # Escrever a linha no CSV
+            # Write the line in CSV
             writer.writerow({
                 'event_url': data.get('event_url', ''),
                 'name': event_name,
@@ -93,7 +93,7 @@ def export_to_csv(data_list, filename='events.csv'):
             })
             
             
-# Rotina para o banco de próximos eventos
+# Routine to create/update database of upcoming events
 if __name__ == "__main__":
     export_to_csv(all_pixta_events)
     export_to_csv(all_shotgun_events)
