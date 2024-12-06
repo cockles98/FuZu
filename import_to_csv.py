@@ -95,6 +95,9 @@ def export_to_csv(data_list, filename='events.csv'):
             
 # Routine to create/update database of upcoming events
 if __name__ == "__main__":
-    export_to_csv(all_pixta_events)
-    export_to_csv(all_shotgun_events)
-    remove_expired_events()
+    export_to_csv(all_pixta_events, filename='events.csv')
+    export_to_csv(all_shotgun_events, filename='events.csv')
+    remove_expired_events(filename='events.csv')
+    
+    export_to_csv(all_pixta_events, filename='history_events.csv')
+    export_to_csv(all_shotgun_events, filename='history_events.csv')
