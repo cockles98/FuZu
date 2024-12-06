@@ -1,0 +1,1 @@
+ssh -i "fuzu-ubuntu.pem" ubuntu@ec2-3-144-135-247.us-east-2.compute.amazonaws.com
