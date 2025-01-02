@@ -1,8 +1,10 @@
 import csv
 from datetime import datetime
 from dateutil.parser import isoparse
-from shotgun_web_scraping import *
 from pixta_web_scraping import *
+from shotgun_web_scraping import *
+from ingresse_web_scraping import *
+
 
 # Function to read existing events in the CSV file
 def read_existing_events(filename='events.csv'):
@@ -97,7 +99,9 @@ def export_to_csv(data_list, filename='events.csv'):
 if __name__ == "__main__":
     export_to_csv(all_pixta_events, filename='events.csv')
     export_to_csv(all_shotgun_events, filename='events.csv')
+    export_to_csv(all_ingresse_events, filename='events.csv')
     remove_expired_events(filename='events.csv')
     
     export_to_csv(all_pixta_events, filename='history_events.csv')
     export_to_csv(all_shotgun_events, filename='history_events.csv')
+    export_to_csv(all_ingresse_events, filename='history_events.csv')
