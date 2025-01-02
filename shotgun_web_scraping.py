@@ -7,6 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import traceback
+# API META
 
 
 def extract_informations(scripts):
@@ -93,45 +95,54 @@ def get_event_urls(city_url):
     return list(set(event_urls))
     
 
-# Get all available cities
-answer = requests.get("https://shotgun.live/en/cities")
-content = BeautifulSoup(answer.content, "html.parser")
-target_div = content.find("div", {"id": "br", "class": "relative space-y-8"})
-links = target_div.find_all("a", href=True)  # Search for links within the div
-cities_list = [
-    link["href"].split("/")[-1]  # Extracts only "caxias-do-sul" from the link
-    for link in links
-    if "/en/cities/" in link["href"]  # Ensure it is a city link
-]
+if __name__ == "__main__":
+    try:
+        # Get all available cities
+        answer = requests.get("https://shotgun.live/en/cities")
+        content = BeautifulSoup(answer.content, "html.parser")
+        target_div = content.find("div", {"id": "br", "class": "relative space-y-8"})
+        links = target_div.find_all("a", href=True)  # Search for links within the div
+        cities_list = [
+            link["href"].split("/")[-1]  # Extracts only "caxias-do-sul" from the link
+            for link in links
+            if "/en/cities/" in link["href"]  # Ensure it is a city link
+        ]
+           
+        # Get all event urls
+        all_event_urls = []
+        for city in cities_list:
+            city_url = f"https://shotgun.live/en/cities/{city}"
+            event_urls = get_event_urls(city_url)
+            for event in event_urls:  
+                all_event_urls.append(event)
+            
+        # Get all event infos
+        all_shotgun_events = []
+        for url in all_event_urls:
+            # Page connection
+            answer = requests.get(url)
+            content = BeautifulSoup(answer.text, "html.parser")
+            
+            # Get event info
+            scripts = content.find_all('script', type='application/ld+json')
+            event_dict = extract_informations(scripts)
+            
+            # Get event tags 
+            div_tags = content.find("div", class_="flex flex-wrap gap-2")
+            if div_tags:
+                tags = []
+                for tag in div_tags.find_all("a"):
+                    tags.append(tag.text.strip())
+                event_dict["tags"] = ", ".join(tag.capitalize() for tag in tags)
+            
+            # Save infos
+            all_shotgun_events.append(event_dict)
+        
 
-
-# Get all event urls
-all_event_urls = []
-for city in cities_list:
-    city_url = f"https://shotgun.live/en/cities/{city}"
-    event_urls = get_event_urls(city_url)
-    for event in event_urls:  
-        all_event_urls.append(event)
-    
-    
-# Get all event infos
-all_shotgun_events = []
-for url in all_event_urls:
-    # Page connection
-    answer = requests.get(url)
-    content = BeautifulSoup(answer.text, "html.parser")
-    
-    # Get event info
-    scripts = content.find_all('script', type='application/ld+json')
-    event_dict = extract_informations(scripts)
-    
-    # Get event tags 
-    div_tags = content.find("div", class_="flex flex-wrap gap-2")
-    if div_tags:
-        tags = []
-        for tag in div_tags.find_all("a"):
-            tags.append(tag.text.strip())
-        event_dict["tags"] = ", ".join(tag.capitalize() for tag in tags)
-    
-    # Save infos
-    all_shotgun_events.append(event_dict)
+    except Exception as e:
+        error_message = traceback.format_exc()
+        print("[ERRO] Ocorreu um problema ao executar o script.")
+        print(error_message)
+        
+        # Envia alerta no WhatsApp
+        #send_whatsapp_alert(f"Ocorreu um erro no script da EC2:\n\n{error_message}")

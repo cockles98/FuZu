@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import traceback
+# API META
         
 
 # Function to get information from all events
@@ -55,28 +57,37 @@ def extract_informations(events_list):
     return events_data
 
 
-# Get json from pixta
-resp = requests.get("https://api.pixta.me//api/health.json")
-content = BeautifulSoup(resp.text, "html.parser")
-dict_ = json.loads(content.text)
-events_list = dict_["events"]
-
-
-# Get all available cities
-cities_list = []
-for city in dict_["cities"]:
-    if city["name"]:
-        cities_list.append(city["slug"])
-
-
-# Get all events infos
-all_pixta_events = []
-for city in cities_list:
-    resp = requests.get(f"https://api.pixta.me//api/cities/{city}.json?tag=")
-    if resp.status_code != 200: continue
-    conteudo = BeautifulSoup(resp.text, "html.parser")
-    dict_ = json.loads(conteudo.text)
-    events_list = dict_["events"]
-    events_data = extract_informations(events_list)
-    for event in events_data:
-        all_pixta_events.append(event)
+if __name__ == "__main__":
+    try:
+        # Get json from pixta
+        resp = requests.get("https://api.pixta.me//api/health.json")
+        content = BeautifulSoup(resp.text, "html.parser")
+        dict_ = json.loads(content.text)
+        events_list = dict_["events"]
+        
+        # Get all available cities
+        cities_list = []
+        for city in dict_["cities"]:
+            if city["name"]:
+                cities_list.append(city["slug"])
+          
+        # Get all events infos
+        all_pixta_events = []
+        for city in cities_list:
+            resp = requests.get(f"https://api.pixta.me//api/cities/{city}.json?tag=")
+            if resp.status_code != 200: continue
+            conteudo = BeautifulSoup(resp.text, "html.parser")
+            dict_ = json.loads(conteudo.text)
+            events_list = dict_["events"]
+            events_data = extract_informations(events_list)
+            for event in events_data:
+                all_pixta_events.append(event)
+                
+                
+    except Exception as e:
+        error_message = traceback.format_exc()
+        print("[ERRO] Ocorreu um problema ao executar o script.")
+        print(error_message)
+        
+        # Envia alerta no WhatsApp
+        #send_whatsapp_alert(f"Ocorreu um erro no script da EC2:\n\n{error_message}")
